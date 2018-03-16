@@ -17,8 +17,8 @@ int arg = 0;
 int index = 0;
 char chr;
 char cmd;
-char argv1[16];
-char argv2[16];
+char argv1[32];
+char argv2[32];
 long arg1;
 long arg2;
 
@@ -36,8 +36,8 @@ int runCommand() {
   int i = 0;
   char *p = argv1;
   char *str;
-  int pid_args[4];
-  arg1 = atoi(argv1);
+  int pid_args[8];
+  arg1 = atoi(argv1);  //atoi (表示 ascii to integer)是把字符串转换成整型数的一个函数
   arg2 = atoi(argv2);
 
   switch (cmd) {
@@ -72,18 +72,28 @@ int runCommand() {
       }
       else moving = 1;
       leftPID.TargetTicksPerFrame = arg1;
-      rightPID.TargetTicksPerFrame = arg2;
-      Serial.println("OK");
+      rightPID.TargetTicksPerFrame = -arg2;     //使一个轮的编码器命令为负，确保走直线时两个轮的方向一致
+      Serial.println(arg1);
       break;
     case UPDATE_PID:
-      while ((str = strtok_r(p, ":", &p)) != '\0') {
+      while ((str = strtok_r(p, ":", &p)) != '\0') {    //strtok_r分解字符串为一组字符串。
         pid_args[i] = atoi(str);
         i++;
       }
-      Kp = pid_args[0];
-      Kd = pid_args[1];
-      Ki = pid_args[2];
-      Ko = pid_args[3];
+//      Kp = pid_args[0];
+//      Kd = pid_args[1];
+//      Ki = pid_args[2];
+//      Ko = pid_args[3];
+
+      left_Kp = pid_args[0];
+      left_Kd = pid_args[1];
+      left_Ki = pid_args[2];
+      left_Ko = pid_args[3];
+
+      right_Kp = pid_args[4];
+      right_Kd = pid_args[5];
+      right_Ki = pid_args[6];
+      right_Ko = pid_args[7];
       Serial.println("OK");
       break;
     case ANALOG_READ:
@@ -115,6 +125,25 @@ int runCommand() {
 unsigned long time = 0, old_time = 0;
 void setup() {
   Serial.begin(BAUDRATE);
+      //set as inputs
+//    DDRD &= ~(1<<LEFT_ENC_PIN_A);
+//    DDRD &= ~(1<<LEFT_ENC_PIN_B);
+//    DDRC &= ~(1<<RIGHT_ENC_PIN_A);
+//    DDRC &= ~(1<<RIGHT_ENC_PIN_B);
+//    
+//    //enable pull up resistors
+//    PORTD |= (1<<LEFT_ENC_PIN_A);
+//    PORTD |= (1<<LEFT_ENC_PIN_B);
+//    PORTC |= (1<<RIGHT_ENC_PIN_A);
+//    PORTC |= (1<<RIGHT_ENC_PIN_B);
+//    
+//    // tell pin change mask to listen to left encoder pins
+//    PCMSK2 |= (1 << LEFT_ENC_PIN_A)|(1 << LEFT_ENC_PIN_B);
+//    // tell pin change mask to listen to right encoder pins
+//    PCMSK1 |= (1 << RIGHT_ENC_PIN_A)|(1 << RIGHT_ENC_PIN_B);
+//    
+//    // enable PCINT1 and PCINT2 interrupt in the general interrupt mask
+//    PCICR |= (1 << PCIE1) | (1 << PCIE2);
   initEncoders();
   initMotorController();
   resetPID();
@@ -123,6 +152,7 @@ void setup() {
 void loop() {
   while (Serial.available() > 0) {
     chr = Serial.read();
+   // Serial.println(chr);
     if (chr == 13) {
       if (arg == 1) argv1[index] = NULL;
       else if (arg == 2) argv2[index] = NULL;
